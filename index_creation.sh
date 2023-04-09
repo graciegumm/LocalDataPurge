@@ -25,6 +25,7 @@ for file in "$local_path"/*; do
     continue
   fi
   # Check if file has already been added to log.csv
+  name=$(basename $file)
   if grep -q "^$(basename $file)," $FILE; then
     previous_status=$(grep "$(basename "$file")" "$FILE" | awk -F', ' '{print $6}')
     # Check if it has been uploaded already. Update the upload status.
@@ -38,18 +39,13 @@ for file in "$local_path"/*; do
       fi
     fi
   else
-    echo "Processing file ${file:11:54} ..."
-    #year_file=${file:0:4}
-    year_file=${file:11:4} #DELETE
-    #month_string=${file:5:2}
-    month_string=${file:16:2} #DELETE
-    #day_string=${file:8:2}
-    day_string=${file:19:2} #DELETE
-    #time_string=${file:11:8}
-    time_string=${file:22:8} #DELETE
+    echo "Processing file $name ..."
+    year_file=${name:0:4}
+    month_string=${name:5:2}
+    day_string=${name:8:2}
+    time_string=${name:11:8}
     date_directory=$year_file"_"$month_string"_"$day_string
-    #type=${file:38:3}
-    type=${file:49:3} #DELETE
+    type=${name:38:3}
 
     if [ -f "$remote_path/$(basename "$file")" ]; then
       status="Uploaded"
