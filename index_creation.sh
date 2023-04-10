@@ -35,7 +35,7 @@ for file in "$local_path"/*; do
       else
         status="Not Uploaded"
         # This will delete the file from the log if it has not been uploaded.
-        sed -i "/^$(basename $file),/d" $FILE #testing if this will remove a file
+        sed -i "/^$(basename $file),/d" $FILE
       fi
     fi
   else
@@ -53,6 +53,25 @@ for file in "$local_path"/*; do
       status="Not Uploaded"
     fi
     echo "$(basename "$file"), $date_directory, $time_string, $type, $(stat -c %s $file), $status" >> "$FILE"
+  fi
+done
+file_name=$(awk -F ',' 'NR==2{print $1}' $FILE)
+upload_status=$(awk -F ',' 'NR==2{print $6}' $FILE)
 
+# Start delete section
+
+critical_memory_usage=80
+memory_usage=$(free | awk 'NR==2{printf "%.2f\n", $3/($3+$4)*100}') # will replace this w the LibPanda command
+#while [[ $memory_usage > $critical_memory_usage ]]
+for i in 1 2 3 4; do # DELETE, just for local testing
+  echo "Memory usage critical...deleting files..."
+  file_name=$(awk -F ',' 'NR==2{print $1}' $FILE)
+  upload_status=$(awk -F ',' 'NR==2{print $6}' $FILE)
+  # delete file if status is "Uploaded"
+  if [ "$upload_status" = " Uploaded" ]; then
+    echo "Deleting first file..."
+    rm "${local_path}/${file_name}"
+    sed -i '2d' $FILE
+  else
   fi
 done
