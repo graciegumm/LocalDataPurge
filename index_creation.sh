@@ -67,11 +67,15 @@ for i in 1 2 3 4; do # DELETE, just for local testing
   echo "Memory usage critical...deleting files..."
   file_name=$(awk -F ',' 'NR==2{print $1}' $FILE)
   upload_status=$(awk -F ',' 'NR==2{print $6}' $FILE)
+  # Make sure the log.csv file is not empty
+  if [ "$(wc -l < "$FILE")" -lt 2 ]; then
+    echo "Error in deleting files: no files are available to be deleted"
+    break
+  fi
   # delete file if status is "Uploaded"
   if [ "$upload_status" = " Uploaded" ]; then
     echo "Deleting first file..."
     rm "${local_path}/${file_name}"
     sed -i '2d' $FILE
-  else
   fi
 done
