@@ -1,14 +1,16 @@
 #!/bin/bash
 
-local_path=localfiles
-remote_path=remotefiles
+local_path = /var/panda/CyverseData/JmscslgroupData/PandaData/
+# local_path=localfiles
+VIN=$(cat /etc/libpanda.d/vin)
+remote_dir=`ils -r /iplant/home/sprinkjm/private-circles/$VIN/libpanda/`
+# files=`ls -R /var/panda/CyverseData/JmscslgroupData/PandaData/`
+
+# remote_path=remotefiles
 FILE=$local_path/log.csv
 
-# Below is only commented out because I am running this on my laptop
-# VIN=$(cat /etc/libpanda.d/vin)
-# remote_dir=`ils -r /iplant/home/sprinkjm/private-circles/$VIN/libpanda/`
-# files=`ls -R /var/panda/CyverseData/JmscslgroupData/PandaData/`
-# local_path = /var/panda/CyverseData/JmscslgroupData/PandaData/
+
+
 
 # Create the index (log.csv) file if it doesn't already exist
 if [ -f "$FILE" ]; then
