@@ -2,7 +2,6 @@
 #!/bin/bash
 VIN=$(cat /etc/libpanda.d/vin)
 local_path=/var/panda/CyverseData/JmscslgroupData/PandaData
-#upload_status_path=/var/panda/CyverseData/JmscslgroupData
 FILE=upload_status.csv
 
 # creating index file if it does not already exist
