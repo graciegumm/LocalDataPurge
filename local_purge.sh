@@ -98,55 +98,61 @@ done
 
 # DELETE SECTION
 critical_storage=80
-used_storage=$(lsblk -fmo NAME,FSUSE%,FSAVAIL,FSSIZE | grep 'mmcblk0p2' | awk '{printf "%.1f", $2 }')
-for i in 1; do
-  echo "Memory usage critical... deleting files."
-  file_name=$(awk -F ',' 'NR==2{print $1}' $FILE)
-  name=$(basename "$file_name")
-  local_size=$(grep "$name" "$FILE" | awk -F', ' '{print $5}')
-  previous_status=$(grep "$name" "$FILE" | awk -F', ' '{print $6}')
-  date_directory=$(grep "$name" "$FILE" | awk -F', ' '{print $2}')
-  time_file=$(grep "$name" "$FILE" | awk -F', ' '{print $3}')
-  type=$(grep "$name" "$FILE" | awk -F', ' '{print $4}')
+used_storage_float=$(lsblk -fmo NAME,FSUSE%,FSAVAIL,FSSIZE | grep 'mmcblk0p2' | awk '{printf "%.1f", $2 }')
+used_storage=${used_storage_float%.*}
+delete_to=60
 
-  # Check that log.csv file is not empty.
-  if [ "$(wc -l < "$FILE")" -lt 2 ]; then
-    echo "Error in deleting files: no files are available to be deleted"
-    break
-  fi
-  # Delete files if status is uploaded. Double check status
-  if [ "$previous_status" = "Uploaded" ]; then
-    echo "$file has been uploaded and would be deleted"
-    remote_files=$(ils -r /iplant/home/sprinkjm/private-circles/$VIN/libpanda/$date_directory/) 
-    remote_found=0
-    for remote_file in $remote_files; do
-      remote_basename=$(basename "$remote_file")
-      if [[ "$name" == "$remote_basename" ]]; then
-        remote_size_str=$(ils -l "/iplant/home/sprinkjm/private-circles/$VIN/libpanda/$date_directory/$remote_basename" | awk '{printf$4}')
-        len_str=$(( ${#remote_size_str} / 2))
-        remote_size=${remote_size_str:0:$len_str}
-        # FILE IS UPLOADED, GOOD TO DELETE
-        if [[ "$local_size" == "$remote_size" ]]; then
-          status="Uploaded"
-          time_check=$(date '+%Y-%m-%d %H:%M:%S')
-          echo "Deleting $name..."
-          sudo rm "${local_path}/${date_directory}/${file_name}"
-          sed -i '2d' $FILE
-          remote_found=1
-          break
+if [[ $used_storage -gt $critical_storage ]]; then
+  while [[ $used_storage -gt $critical_storage ]]; do
+    echo "Memory usage critical... deleting files."
+    file_name=$(awk -F ',' 'NR==2{print $1}' $FILE)
+    name=$(basename "$file_name")
+    local_size=$(grep "$name" "$FILE" | awk -F', ' '{print $5}')
+    previous_status=$(grep "$name" "$FILE" | awk -F', ' '{print $6}')
+    date_directory=$(grep "$name" "$FILE" | awk -F', ' '{print $2}')
+    time_file=$(grep "$name" "$FILE" | awk -F', ' '{print $3}')
+    type=$(grep "$name" "$FILE" | awk -F', ' '{print $4}')
+
+    # Check that log.csv file is not empty.
+    if [ "$(wc -l < "$FILE")" -lt 2 ]; then
+      echo "Error in deleting files: no files are available to be deleted"
+      break
+    fi
+    # Delete files if status is uploaded. Double check status
+    if [ "$previous_status" = "Uploaded" ]; then
+      echo "$file has been uploaded and would be deleted"
+      remote_files=$(ils -r /iplant/home/sprinkjm/private-circles/$VIN/libpanda/$date_directory/) 
+      remote_found=0
+      for remote_file in $remote_files; do
+        remote_basename=$(basename "$remote_file")
+        if [[ "$name" == "$remote_basename" ]]; then
+          remote_size_str=$(ils -l "/iplant/home/sprinkjm/private-circles/$VIN/libpanda/$date_directory/$remote_basename" | awk '{printf$4}')
+          len_str=$(( ${#remote_size_str} / 2))
+          remote_size=${remote_size_str:0:$len_str}
+          # FILE IS UPLOADED, GOOD TO DELETE
+          if [[ "$local_size" == "$remote_size" ]]; then
+            status="Uploaded"
+            time_check=$(date '+%Y-%m-%d %H:%M:%S')
+            echo "Deleting $name..."
+            sudo rm "${local_path}/${date_directory}/${file_name}"
+            sed -i '2d' $FILE
+            remote_found=1
+            break
+          fi
         fi
-      fi
-    done
-    if [[ "$remote_found" == "0" ]]; then
+      done
+      if [[ "$remote_found" == "0" ]]; then
         status="Not Uploaded"
         time_check=$(date '+%Y-%m-%d %H:%M:%S')
         sed -i "/^$name,/d" $FILE
         echo "$name, $date_directory, $time_file, $type, $local_size, $status, $time_check" >> "$FILE"
-    fi  
-  else
-    status="Not Uploaded"
-    time_check=$(date '+%Y-%m-%d %H:%M:%S')
-    sed -i "/^$name,/d" $FILE
-    echo "$name, $date_directory, $time_file, $type, $local_size, $status, $time_check" >> "$FILE"
-  fi
-done
+      fi  
+    else
+      status="Not Uploaded"
+      time_check=$(date '+%Y-%m-%d %H:%M:%S')
+      sed -i "/^$name,/d" $FILE
+      echo "$name, $date_directory, $time_file, $type, $local_size, $status, $time_check" >> "$FILE"
+    fi
+    used_storage=$(lsblk -fmo NAME,FSUSE%,FSAVAIL,FSSIZE | grep 'mmcblk0p2' | awk '{printf "%.1f", $2 }')
+  done
+fi
