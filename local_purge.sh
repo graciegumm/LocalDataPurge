@@ -101,10 +101,10 @@ critical_storage=80
 used_storage_float=$(lsblk -fmo NAME,FSUSE%,FSAVAIL,FSSIZE | grep 'mmcblk0p2' | awk '{printf "%.1f", $2 }')
 used_storage=${used_storage_float%.*}
 delete_to=60
-
+echo $used_storage_float
 if [[ $used_storage -gt $critical_storage ]]; then
-  while [[ $used_storage -gt $critical_storage ]]; do
-    echo "Memory usage critical... deleting files."
+  echo "Memory usage critical... deleting files."
+  while [[ $used_storage -gt $delete_to ]]; do
     file_name=$(awk -F ',' 'NR==2{print $1}' $FILE)
     name=$(basename "$file_name")
     local_size=$(grep "$name" "$FILE" | awk -F', ' '{print $5}')
@@ -120,7 +120,7 @@ if [[ $used_storage -gt $critical_storage ]]; then
     fi
     # Delete files if status is uploaded. Double check status
     if [ "$previous_status" = "Uploaded" ]; then
-      echo "$file has been uploaded and would be deleted"
+      echo "$file has been uploaded and is deleted"
       remote_files=$(ils -r /iplant/home/sprinkjm/private-circles/$VIN/libpanda/$date_directory/) 
       remote_found=0
       for remote_file in $remote_files; do
@@ -153,6 +153,8 @@ if [[ $used_storage -gt $critical_storage ]]; then
       sed -i "/^$name,/d" $FILE
       echo "$name, $date_directory, $time_file, $type, $local_size, $status, $time_check" >> "$FILE"
     fi
-    used_storage=$(lsblk -fmo NAME,FSUSE%,FSAVAIL,FSSIZE | grep 'mmcblk0p2' | awk '{printf "%.1f", $2 }')
+    used_storage_float=$(lsblk -fmo NAME,FSUSE%,FSAVAIL,FSSIZE | grep 'mmcblk0p2' | awk '{printf "%.1f", $2 }')
+    used_storage=${used_storage_float%.*}
   done
+  echo "Deletion process is completed. Currrent used storage $used_storage_float%"
 fi
